@@ -2,8 +2,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import getopt
 import os
 import sys
-import time
-import threading
+import re
+
+domain = ''
+regex = ''
 
 class ResolverServer(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -12,7 +14,8 @@ class ResolverServer(BaseHTTPRequestHandler):
             if(len(pathArgs) == 2):
                 queryArgs = pathArgs[1].split('=')
                 if(len(queryArgs) == 2 and queryArgs[0] == 'domain'):
-                    if(queryArgs[1].isdigit()):
+                    match = re.search(regex, queryArgs[1])
+                    if match:
                         self.send_response(200)
                         self.end_headers()
                         return
@@ -32,18 +35,22 @@ if __name__ == "__main__":
     serverPort = -1
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "s:p:", ["server=","port="])
+        opts, args = getopt.getopt(sys.argv[1:], "s:p:d:", ["server=","port=", "domain="])
 
         for opt, arg in opts:
             if opt in ['-s']:
                 hostName = arg
             elif opt in ['-p']:
                 serverPort = int(arg)
+            elif opt in ['-d']:
+                domain = arg
 
     except getopt.GetoptError:
         print(getopt.GetoptError)
-        print('ondemand-resolver.py -p <port> -s <server>')
+        print('ondemand-resolver.py -p <port> -s <server> -d <domain>')
         sys.exit(2)
+
+    regex = '\d.{}'.format(domain)
 
     webServer = HTTPServer((hostName, serverPort), ResolverServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
